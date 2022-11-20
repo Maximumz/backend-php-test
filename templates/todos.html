@@ -59,7 +59,7 @@
     <a class="btn btn-primary" href="/todo?page={{ (page-1) }}">Prev</a>
     {% endif %}
 
-    {% if (count == 10) and (totalCount > 10) %}
+    {% if page != numberOfPages %}
     <a class="btn btn-primary" href="/todo?page={{ (page+1) }}">Next</a>
     {% endif %}
 </div>

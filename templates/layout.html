@@ -21,7 +21,7 @@
             <li><a href="/todo">Todo list</a></li>
           </ul>
           <ul class="nav navbar-nav navbar-right">
-            {% if user %}
+            {% if user is not null %}
               <li><a href="/logout"><span class="glyphicon glyphicon-user"></span> {{ user.username }} Logout</a></li>
             {% else %}
               <li><a href="/login">Login</a></li>
