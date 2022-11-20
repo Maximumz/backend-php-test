@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="col-md-4 col-md-offset-4">
+<div class="table-responsive">
     <h1>Todo List:</h1>
     {% for message in app.session.flashBag.get('error') %}
     <div class="alert alert-danger" role="alert">
@@ -55,5 +55,12 @@
             </form>
         </tr>
     </table>
+    {% if page > 1 %}
+    <a class="btn btn-primary" href="/todo?page={{ (page-1) }}">Prev</a>
+    {% endif %}
+
+    {% if (count == 10) and (totalCount > 10) %}
+    <a class="btn btn-primary" href="/todo?page={{ (page+1) }}">Next</a>
+    {% endif %}
 </div>
 {% endblock %}

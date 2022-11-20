@@ -2,8 +2,10 @@
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Silex\Application;
+use \Doctrine\DBAL\ParameterType;
 
-$app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
+$app['twig'] = $app->share($app->extend('twig', function($twig, Application $app) {
     $twig->addGlobal('user', $app['session']->get('user'));
 
     return $twig;
@@ -41,9 +43,15 @@ $app->get('/logout', function () use ($app) {
 });
 
 
-$app->get('/todo/{id}', function ($id) use ($app) {
+$app->get('/todo/{id}', function (Request $request, int $id) use ($app) {
     if (null === $user = $app['session']->get('user')) {
         return $app->redirect('/login');
+    }
+
+    $page = (int)$request->get('page');
+
+    if (!$page) {
+        $page = 1;
     }
 
     $params = ['user_id' => $user['id']];
@@ -64,15 +72,35 @@ $app->get('/todo/{id}', function ($id) use ($app) {
             'todo' => $todo,
         ]);
     } else {
-        $sql = "SELECT * FROM todos WHERE user_id = :user_id";
-        $todos = $app['db']->fetchAll($sql, $params);
 
-        return $app['twig']->render('todos.html', [
+        $sql = "SELECT id FROM todos WHERE user_id = :user_id";
+        $total_count = $app['db']->executeStatement($sql, $params);
+
+        // page must be at lest 1
+        $page_limit = 10;
+        $params['offset'] = ($page - 1) * $page_limit;
+        $params['row_count'] = $page_limit;
+
+        $sql = "SELECT * FROM todos WHERE user_id = :user_id LIMIT :offset, :row_count";
+
+        $todos = $app['db']->fetchAll($sql, $params,
+            [
+                'offset' => ParameterType::INTEGER,
+                'row_count' => ParameterType::INTEGER
+            ]
+        );
+
+        $results =  [
             'todos' => $todos,
-        ]);
+            'page' => $page,
+            'count' => count($todos),
+            'totalCount' => $total_count
+        ];
+
+        return $app['twig']->render('todos.html', $results);
     }
 })
-->value('id', null);
+->value('id', 0);
 
 
 $app->post('/todo/add', function (Request $request) use ($app) {
@@ -167,7 +195,7 @@ $app->match('/todo/complete/{id}', function (Request $request, int $id) use ($ap
     return $app->redirect('/todo');
 });
 
-$app->get('/todo/{id}/json', function ($id) use ($app) {
+$app->get('/todo/{id}/json', function (int $id) use ($app) {
 
     $sql = "SELECT * FROM todos WHERE id = :todo_id AND user_id = :user_id";
 
