@@ -8,8 +8,13 @@
         {{ message }}
     </div>
     {% endfor %}
+    {% for message in app.session.flashBag.get('success') %}
+    <div class="alert alert-success" role="alert">
+        {{ message }}
+    </div>
+    {% endfor %}
     <table class="table table-striped">
-        <th>#</th><th>User</th><th>Description</th><th></th>
+        <th>#</th><th>User</th><th>Description</th><th>Complete</th><th>Date Completed</th><th>Delete</th>
         {% for todo in todos %}
             <tr>
                 <td>{{ todo.id }}</td>
@@ -20,6 +25,19 @@
                     </a>
                 </td>
                 <td>
+                    <form method="post" action="{{ app.request.baseurl }}/todo/complete/{{ todo.id }}">
+                        <input type="hidden" name="completed_status" value="{{ (todo.complete ? 0 : 1) }}">
+                        <button type="submit" class="btn btn-xs btn-success">
+                            <span class="glyphicon {{ todo.complete ? 'glyphicon-remove' :'glyphicon-ok' }} glyphicon-white"></span>
+                        </button>
+                    </form>
+                </td>
+                <td>
+                    {% if todo.complete %}
+                    <p>{{ todo.date_completed | date("H:i:s d/m/Y") }}</p>
+                    {% endif %}
+                </td>
+                <td>
                     <form method="post" action="{{ app.request.baseurl }}/todo/delete/{{ todo.id }}">
                         <button type="submit" class="btn btn-xs btn-danger"><span class="glyphicon glyphicon-remove glyphicon-white"></span></button>
                     </form>
@@ -28,7 +46,7 @@
         {% endfor %}
         <tr>
             <form method="post" action="{{ app.request.baseurl }}/todo/add">
-                <td colspan="3">
+                <td colspan="5">
                     <input type="textbox" name="description" class="small-6 small-center" placeholder="Description...">
                 </td>
                 <td>

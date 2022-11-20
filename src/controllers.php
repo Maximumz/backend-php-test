@@ -46,16 +46,26 @@ $app->get('/todo/{id}', function ($id) use ($app) {
         return $app->redirect('/login');
     }
 
+    $params = ['user_id' => $user['id']];
+
     if ($id){
-        $sql = "SELECT * FROM todos WHERE id = '$id'";
-        $todo = $app['db']->fetchAssoc($sql);
+        $sql = "SELECT * FROM todos WHERE id = :todo_id AND user_id = :user_id";
+
+        $params['todo_id'] = $id;
+
+        $todo = $app['db']->fetchAssoc($sql, $params);
+
+        // No results
+        if (!$todo) {
+            return $app->redirect('/todo');
+        }
 
         return $app['twig']->render('todo.html', [
             'todo' => $todo,
         ]);
     } else {
-        $sql = "SELECT * FROM todos WHERE user_id = '${user['id']}'";
-        $todos = $app['db']->fetchAll($sql);
+        $sql = "SELECT * FROM todos WHERE user_id = :user_id";
+        $todos = $app['db']->fetchAll($sql, $params);
 
         return $app['twig']->render('todos.html', [
             'todos' => $todos,
@@ -78,7 +88,19 @@ $app->post('/todo/add', function (Request $request) use ($app) {
 
         $params = [$user_id, $description];
 
-        $app['db']->executeUpdate($sql, $params);
+        $result = $app['db']->executeStatement($sql, $params);
+
+        if ($result) {
+            $app['session']->getFlashBag()->add(
+                'success',
+                "Todo added!"
+            );
+        } else {
+            $app['session']->getFlashBag()->add(
+                'error',
+                "Failed adding todo!"
+            );
+        }
     } else {
         $app['session']->getFlashBag()->add(
             'error',
@@ -90,10 +112,57 @@ $app->post('/todo/add', function (Request $request) use ($app) {
 });
 
 
-$app->match('/todo/delete/{id}', function ($id) use ($app) {
+$app->match('/todo/delete/{id}', function (int $id) use ($app) {
 
-    $sql = "DELETE FROM todos WHERE id = '$id'";
-    $app['db']->executeUpdate($sql);
+    $sql = "DELETE FROM todos WHERE id = :todo_id AND user_id = :user_id";
+
+    $params = [
+        'todo_id' => $id,
+        'user_id' => $app['session']->get('user')['id']
+    ];
+
+    $result = $app['db']->executeStatement($sql, $params);
+
+    if ($result) {
+        $app['session']->getFlashBag()->add(
+            'success',
+            "Todo#{$id} deleted!"
+        );
+    } else {
+        $app['session']->getFlashBag()->add(
+            'error',
+            "Failed deleting todo#{$id}!"
+        );
+    }
+
+    return $app->redirect('/todo');
+});
+
+$app->match('/todo/complete/{id}', function (Request $request, int $id) use ($app) {
+
+    $completed_status = $request->get('completed_status');
+
+    $sql = "UPDATE todos SET complete = :completed_status WHERE id = :todo_id AND user_id = :user_id";
+
+    $params = [
+        'completed_status' => $completed_status,
+        'todo_id' => $id,
+        'user_id' => $app['session']->get('user')['id']
+    ];
+
+    $result = $app['db']->executeStatement($sql, $params);
+
+    if ($result) {
+        $app['session']->getFlashBag()->add(
+            'success',
+            $completed_status ? "Todo#{$id} marked completed!" : "Todo#{$id} marked as uncompleted!"
+        );
+    } else {
+        $app['session']->getFlashBag()->add(
+            'error',
+            'Failed updating!'
+        );
+    }
 
     return $app->redirect('/todo');
 });
