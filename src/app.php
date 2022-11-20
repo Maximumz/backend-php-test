@@ -19,15 +19,15 @@ $app->register(new TwigServiceProvider());
 $app->register(new HttpFragmentServiceProvider());
 
 $app->register(new YamlConfigServiceProvider(__DIR__.'/../config/config.yml'));
-$app->register(new DoctrineServiceProvider, array(
-    'db.options' => array(
+$app->register(new DoctrineServiceProvider, [
+    'db.options' => [
         'driver'    => 'pdo_mysql',
         'host'      => $app['config']['database']['host'],
         'dbname'    => $app['config']['database']['dbname'],
         'user'      => $app['config']['database']['user'],
         'password'  => $app['config']['database']['password'],
         'charset'   => 'utf8',
-    ),
-));
+   ],
+]);
 
 return $app;
