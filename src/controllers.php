@@ -166,3 +166,17 @@ $app->match('/todo/complete/{id}', function (Request $request, int $id) use ($ap
 
     return $app->redirect('/todo');
 });
+
+$app->get('/todo/{id}/json', function ($id) use ($app) {
+
+    $sql = "SELECT * FROM todos WHERE id = :todo_id AND user_id = :user_id";
+
+    $params = [
+        'todo_id' => $id,
+        'user_id' => $app['session']->get('user')['id']
+    ];
+
+    $todo = $app['db']->fetchAssoc($sql, $params);
+
+    return json_encode($todo);
+});
